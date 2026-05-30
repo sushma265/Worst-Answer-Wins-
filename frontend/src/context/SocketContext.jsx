@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 
 const SocketContext = createContext(null);
 
-const SOCKET_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+const SOCKET_URL = import.meta.env.VITE_SERVER_URL || "https://worst-answer-wins.onrender.com";
 
 export function SocketProvider({ children }) {
   const [socket, setSocket] = useState(null);
