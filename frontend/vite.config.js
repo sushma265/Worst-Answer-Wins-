@@ -1,8 +1,6 @@
-const cors = require("cors");
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
-app.use(
-  cors({
-    origin: "https://worst-answer-wins.vercel.app",
-    credentials: true,
-  })
-);
+export default defineConfig({
+  plugins: [react()],
+});
