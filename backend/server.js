@@ -138,7 +138,7 @@ io.on("connection", (socket) => {
 
     if (!room) { socket.emit("error", { message: "Room not found!" }); return; }
     if (room.phase !== "lobby") { socket.emit("error", { message: "Game already in progress!" }); return; }
-    if (room.players.length >= 8) { socket.emit("error", { message: "Room is full!" }); return; }
+    if (room.players.length >= 20) { socket.emit("error", { message: "Room is full!" }); return; }
     if (room.players.find(p => p.name.toLowerCase() === playerName.toLowerCase())) {
       socket.emit("error", { message: "Name already taken!" }); return;
     }
