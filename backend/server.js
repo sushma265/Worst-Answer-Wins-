@@ -98,36 +98,34 @@ Example:
   ]
 }
 `;
+try {
+  const result = await model.generateContent({
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: {
+      responseMimeType: "application/json",
+    },
+  });
 
-  try {
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-      },
-    });
+  const text = result.response.text();
 
-    const text = result.response.text();
+  console.log("========== GEMINI RESPONSE ==========");
+  console.log(text);
+  console.log("====================================");
 
-    console.log("Gemini Response:");
-    console.log(text);
+  const parsed = JSON.parse(text);
 
-    const parsed = JSON.parse(text);
+  return parsed.scores;
+} catch (err) {
+  console.error("========== GEMINI ERROR ==========");
+  console.error(err);
+  console.error("==================================");
 
-    if (!parsed.scores || !Array.isArray(parsed.scores)) {
-      throw new Error("Invalid scores array");
-    }
-
-    return parsed.scores;
-  } catch (err) {
-    console.error("Gemini error:", err);
-
-    return answers.map((a) => ({
-      playerName: a.playerName,
-      score: 50,
-      reason: "AI judge unavailable.",
-    }));
-  }
+  return answers.map((a) => ({
+    playerName: a.playerName,
+    score: 50,
+    reason: "AI judge unavailable.",
+  }));
+}
 }
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
