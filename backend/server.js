@@ -7,7 +7,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { QUESTIONS } from "./questions.js";
 
 dotenv.config();
-
+console.log("Gemini Key Loaded:", !!process.env.GEMINI_API_KEY);
 const app = express();
 const httpServer = createServer(app);
 
@@ -54,50 +54,81 @@ function emitRoomState(roomCode) {
 }
 
 async function judgeAnswers(question, answers) {
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+  });
+
   const answersText = answers
-    .map((a, i) => `Answer ${i + 1} (${a.playerName}): "${a.answer}"`)
-    .join("\n");
+    .map(
+      (a, i) =>
+        `${i + 1}. Player: ${a.playerName}\nAnswer: ${a.answer}`
+    )
+    .join("\n\n");
 
-  const prompt = `You are judging a party game called "Worst Answer Wins". Players submit the worst but most believable wrong answer to a question. The funnier and more convincingly wrong, the better.
+  const prompt = `
+You are judging a game called "Worst Answer Wins".
 
-Question: "${question}"
+Question:
+${question}
 
 Answers:
 ${answersText}
 
-Score each answer from 1-100 based on:
-- How amusingly wrong it is (40%)
-- How believable/plausible it sounds despite being wrong (35%)
-- Creative humor and originality (25%)
+Rules:
+- Score from 1 to 100.
+- Wrong but believable answers should score highest.
+- Funny answers should get bonus points.
+- Correct answers should score low.
+- Give every answer a score.
 
-Respond ONLY with valid JSON in this exact format:
+Return ONLY valid JSON.
+Do NOT use markdown.
+Do NOT use \`\`\`json.
+Do NOT include any explanation outside JSON.
+
+Example:
+
 {
   "scores": [
-    {"playerName": "name", "score": 85, "reason": "one funny sentence explaining why"},
-    ...
+    {
+      "playerName": "John",
+      "score": 87,
+      "reason": "Ridiculously wrong but strangely convincing."
+    }
   ]
 }
-
-Keep reasons short, funny, and encouraging. Score generously - most answers should be 40-95.`;
+`;
 
   try {
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
+    });
+
     const text = result.response.text();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON found");
-    const parsed = JSON.parse(jsonMatch[0]);
+
+    console.log("Gemini Response:");
+    console.log(text);
+
+    const parsed = JSON.parse(text);
+
+    if (!parsed.scores || !Array.isArray(parsed.scores)) {
+      throw new Error("Invalid scores array");
+    }
+
     return parsed.scores;
   } catch (err) {
     console.error("Gemini error:", err);
+
     return answers.map((a) => ({
       playerName: a.playerName,
-      score: Math.floor(Math.random() * 40) + 40,
-      reason: "The AI judge is having a coffee break. Random score awarded!",
+      score: 50,
+      reason: "AI judge unavailable.",
     }));
   }
 }
-
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
 
